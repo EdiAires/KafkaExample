@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "capability": "",
+  "labels": {},
+  "branching-flow": {
+    "flow": "multiple-teams",
+    "default-branch": "main",
+    "teams": [
+      "ppb"
+    ],
+    "flow-config": {
+      "default": {
+        "protection": "strict",
+        "sync": {
+          "timing": "proactive"
+        }
+      },
+      "develop": {
+        "protection": "strict-with-maintainers-bypass",
+        "sync": {
+          "timing": "proactive"
+        }
+      },
+      "support": {
+        "protection": "strict",
+        "sync": {
+          "timing": ""
+        }
+      }
+    }
+  }
+}
