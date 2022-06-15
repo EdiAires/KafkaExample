@@ -17,9 +17,12 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up JDK 8
-        uses: Flutter-Tech/ppb-java@v1.0.0
+        uses: actions/setup-java@v3
         with:
           java-version: '8'
+          distribution: 'temurin'
+          overwrite-settings: false
+          cache: 'maven'
 
       - name: Set up Maven
         uses: stCarolas/setup-maven@v4.2
