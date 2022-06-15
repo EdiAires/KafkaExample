@@ -1,0 +1,50 @@
+name: Start Bugfix
+on:
+  workflow_dispatch:
+    inputs:
+      divisionPrefix:
+        description: 'Division (ppb, fd)'
+        required: true
+      featureID:
+        description: 'Bugfix unique identifier'
+        required: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    outputs:
+      status: ${{ steps.validate_develop_branch.conclusion }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Make scripts executable
+        run: |
+          chmod +x "${GITHUB_WORKSPACE}/.github/check-branch-remote.sh"
+
+      - id: validate_develop_branch
+        name: Validate develop branch exists
+        run: |
+          export does_develop_exist=`bash ${GITHUB_WORKSPACE}/.github/check-branch-remote.sh ${{ github.event.inputs.divisionPrefix }}/develop`
+          echo "Does develop branch exist? (0=Yes) $does_develop_exist"
+          exit $does_develop_exist
+
+  startBugfix:
+    runs-on: ubuntu-latest
+    needs: check
+    if: needs.check.outputs.status == 'success'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: '${{ github.event.inputs.divisionPrefix }}/develop'
+
+      - name: Create bugfix branch
+        run: |
+          git checkout -b "bugfix/${{ github.event.inputs.featureID }}"
+          git push origin "bugfix/${{ github.event.inputs.featureID }}"

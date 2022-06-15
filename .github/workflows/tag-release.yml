@@ -1,0 +1,27 @@
+name: Tag Release
+on:
+  push:
+    branches:
+      - '**/release/**'
+      - 'hotfix/**'
+jobs:
+  tagRelease:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Make scripts executable
+        run: |
+          chmod +x "${GITHUB_WORKSPACE}/.github/gen-current-semver.sh"
+
+      - name: Tag new version
+        run: |
+          git tag "$(bash ${GITHUB_WORKSPACE}/.github/gen-current-semver.sh)"
+          git push origin --tags
+
+      - name: Say Bye
+        run: echo "Bye"

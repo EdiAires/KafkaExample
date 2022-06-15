@@ -1,0 +1,88 @@
+name: Cancel Release
+on:
+  workflow_dispatch:
+    inputs:
+      divisionPrefix:
+        description: 'Division (ppb, fd)'
+        required: true
+      baseVersion:
+        description: 'Base version (major.minor.patch)'
+        required: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    outputs:
+      release: ${{ steps.validate_release_branch.outputs.release_exist }}
+      merge: ${{ steps.validate_merge_branch.outputs.merge_need }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Make scripts executable
+        run: |
+          chmod +x "${GITHUB_WORKSPACE}/.github/check-branch-remote.sh"
+          chmod +x "${GITHUB_WORKSPACE}/.github/exist-commits-behind.sh"
+
+      - id: validate_release_branch
+        name: Validate release branch exists
+        run: |
+          export DOES_RELEASE_EXIST=`bash ${GITHUB_WORKSPACE}/.github/check-branch-remote.sh ${{ github.event.inputs.divisionPrefix }}/release/${{ github.event.inputs.baseVersion }}`
+          echo "Does release branch exist? (0=Yes) $DOES_RELEASE_EXIST"
+          echo "::set-output name=release_exist::$DOES_RELEASE_EXIST"
+          exit $does_release_exist
+
+      - id: validate_merge_branch
+        name: Validate if merge from release to ${{ github.event.inputs.divisionPrefix }}/develop branch is need
+        run: |
+          export DOES_COMMITS_BEHIND_EXIST=`bash ${GITHUB_WORKSPACE}/.github/exist-commits-behind.sh origin/${{ github.event.inputs.divisionPrefix }}/release/${{ github.event.inputs.baseVersion }} origin/${{ github.event.inputs.divisionPrefix }}/develop`
+          echo "Does commits behind master exist? (0=Yes) $DOES_COMMITS_BEHIND_EXIST"
+          echo "::set-output name=merge_need::$DOES_COMMITS_BEHIND_EXIST"
+
+  cancelRelease:
+    runs-on: ubuntu-latest
+    needs: check
+    if: needs.check.outputs.release == '0'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: '${{ github.event.inputs.divisionPrefix }}/release/${{ github.event.inputs.baseVersion }}'
+
+      - name: Initialize mandatory git config
+        run: |
+          git config user.email github.actions@example.com
+          git config user.name "GitHub Actions"
+
+      - name: Make scripts executable
+        run: |
+          chmod +x "${GITHUB_WORKSPACE}/.github/gen-release-semver.sh"
+
+      - name: Merge to develop branch
+        if: needs.check.outputs.merge == '0'
+        run: |
+          git pull
+          git checkout "${{ github.event.inputs.divisionPrefix }}/develop"
+          git merge --squash "${{ github.event.inputs.divisionPrefix }}/release/${{ github.event.inputs.baseVersion }}"
+          git commit -m "Merged ${{ github.event.inputs.divisionPrefix }}/release/${{ github.event.inputs.baseVersion }} into ${{ github.event.inputs.divisionPrefix }}/develop"
+          git tag -f "$(bash ${GITHUB_WORKSPACE}/.github/gen-current-semver.sh)"
+          git push origin "${{ github.event.inputs.divisionPrefix }}/develop" --tags
+
+      - name: Get release tags and delete them
+        run: |
+          git checkout "${{ github.event.inputs.divisionPrefix }}/release/${{ github.event.inputs.baseVersion }}"
+          git push origin --delete $(git tag -l "${{ github.event.inputs.baseVersion }}-${{ github.event.inputs.divisionPrefix }}.beta*")
+
+      - name: Delete release branch
+        run: |
+          git checkout "${{ github.event.inputs.divisionPrefix }}/develop"
+          git branch -d "${{ github.event.inputs.divisionPrefix }}/release/${{ github.event.inputs.baseVersion }}"
+          git push origin --delete "${{ github.event.inputs.divisionPrefix }}/release/${{ github.event.inputs.baseVersion }}"
+
+      - name: Say Bye
+        run: echo "Bye"

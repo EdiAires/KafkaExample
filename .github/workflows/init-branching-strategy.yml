@@ -1,0 +1,162 @@
+name: Init Branching Strategy
+on:
+  workflow_dispatch:
+    inputs:
+      initialVersion:
+        description: 'Initial Version (ex: 1.0.0)'
+        required: true
+jobs:
+  checkPPBDevelopment:
+    name: Check if ppb/develop exists
+    runs-on: ubuntu-latest
+
+    outputs:
+      develop: ${{ steps.validate_ppb_develop_branch.outputs.develop_exist }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Make scripts executable
+        run: |
+          chmod +x "${GITHUB_WORKSPACE}/.github/check-branch-remote.sh"
+
+      - id: validate_ppb_develop_branch
+        name: Validate ppb/develop branch exists
+        run: |
+          export DOES_DEVELOP_EXIST=`bash ${GITHUB_WORKSPACE}/.github/check-branch-remote.sh ppb/develop`
+          echo "Does develop branch exist? (0=Yes) $DOES_DEVELOP_EXIST"
+          echo "::set-output name=develop_exist::$DOES_DEVELOP_EXIST"
+
+  checkFDDevelopment:
+    name: Check if fd/develop exists
+    runs-on: ubuntu-latest
+
+    outputs:
+      develop: ${{ steps.validate_fd_develop_branch.outputs.develop_exist }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Make scripts executable
+        run: |
+          chmod +x "${GITHUB_WORKSPACE}/.github/check-branch-remote.sh"
+
+      - id: validate_fd_develop_branch
+        name: Validate ppb/develop branch exists
+        run: |
+          export DOES_DEVELOP_EXIST=`bash ${GITHUB_WORKSPACE}/.github/check-branch-remote.sh fd/develop`
+          echo "Does develop branch exist? (0=Yes) $DOES_DEVELOP_EXIST"
+          echo "::set-output name=develop_exist::$DOES_DEVELOP_EXIST"
+
+  checkTagExists:
+    name: Check if tag exists
+    runs-on: ubuntu-latest
+
+    outputs:
+      tagExist: ${{ steps.validate_tag_exists.outputs.tag_exist }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - id: validate_tag_exists
+        name: Validate  tag exists
+        run: |
+          export TAG_OUTPUT=`git ls-remote origin refs/tags/${{ github.event.inputs.initialVersion }}`
+          if [[ ${#TAG_OUTPUT} == 0 ]]; then
+            export TAG_EXISTS=1
+          else
+            export TAG_EXISTS=0
+          fi
+          echo "Does the tag exist? (0=Yes) $TAG_EXISTS"
+          echo "::set-output name=tag_exist::$TAG_EXISTS"
+
+  tagVersion:
+    name: Tag version in default branch
+    runs-on: ubuntu-latest
+    needs: checkTagExists
+    if: ${{ needs.checkTagExists.outputs.tagExist == '1' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Tag ${{ github.event.inputs.initialVersion }} version
+        run: |
+          git tag ${{ github.event.inputs.initialVersion }}
+          git push origin --tags
+
+  createPPBDevelop:
+    name: Create ppb/develop branch
+    runs-on: ubuntu-latest
+    needs: checkPPBDevelopment
+    if: ${{ needs.checkPPBDevelopment.outputs.develop == '1' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Create ppb/develop branch
+        run: |
+          git checkout -b ppb/develop
+          git push origin ppb/develop
+
+
+      - name: Tag initial development version
+        run: |
+          major=`echo "${{ github.event.inputs.initialVersion }}"| cut -d "." -f1`
+          minor=`echo "${{ github.event.inputs.initialVersion }}"| cut -d "." -f2`
+          patch=`echo "${{ github.event.inputs.initialVersion }}"| cut -d "." -f3`
+
+          plus1="1"
+          minorPlus1=`echo $(($minor + $plus1))`
+
+          export NEXT_VERSION="$major.$minorPlus1.$patch"
+          echo $NEXT_VERSION
+
+          git tag $NEXT_VERSION-ppb.alpha.0
+          git push origin --tags
+
+  createFDDevelop:
+    name: Create fd/develop branch
+    runs-on: ubuntu-latest
+    needs: checkFDDevelopment
+    if: ${{ needs.checkFDDevelopment.outputs.develop == '1' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Create fd/develop branch
+        run: |
+          git checkout -b fd/develop
+          git push origin fd/develop
+
+      - name: Tag initial development version
+        run: |
+          major=`echo "${{ github.event.inputs.initialVersion }}"| cut -d "." -f1`
+          minor=`echo "${{ github.event.inputs.initialVersion }}"| cut -d "." -f2`
+          patch=`echo "${{ github.event.inputs.initialVersion }}"| cut -d "." -f3`
+
+          plus1="1"
+          minorPlus1=`echo $(($minor + $plus1))`
+
+          export NEXT_VERSION="$major.$minorPlus1.$patch"
+          echo $NEXT_VERSION
+
+          git tag $NEXT_VERSION-fd.alpha.0
+          git push origin --tags

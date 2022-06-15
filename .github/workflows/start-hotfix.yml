@@ -1,0 +1,33 @@
+name: Start Hotfix
+on:
+  workflow_dispatch:
+jobs:
+  startHotfix:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Make scripts executable
+        run: |
+          chmod +x "${GITHUB_WORKSPACE}/.github/gen-release-branch-name.sh"
+          chmod +x "${GITHUB_WORKSPACE}/.github/gen-release-semver.sh"
+
+      - name: Get branch name and semver
+        run: |
+          echo "BRANCH_NAME=$(bash ${GITHUB_WORKSPACE}/.github/gen-release-branch-name.sh patch)" >> $GITHUB_ENV
+          echo "SEMVER=$(bash ${GITHUB_WORKSPACE}/.github/gen-release-semver.sh patch)" >> $GITHUB_ENV
+
+      - name: Print branch name and semver
+        run: |
+          echo "$BRANCH_NAME"
+          echo "$SEMVER"
+
+      - name: Create hotfix branch
+        run: |
+          git checkout -b "hotfix/$BRANCH_NAME"
+          git tag $SEMVER
+          git push origin "hotfix/$BRANCH_NAME" --tags
