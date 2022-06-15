@@ -1,9 +1,9 @@
 name: CI - Full steps
 
 on:
-  pull_request:
-    branches:
-      - 'main'
+  #pull_request:
+   # branches:
+   #   - 'main'
   push:
     branches:
       - 'test'
@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     name: build
-    runs-on: cloud-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
         uses: actions/checkout@v3
