@@ -4,11 +4,14 @@ on:
   pull_request:
     branches:
       - 'main'
+  push:
+    branches:
+      - 'test'
       
 jobs:
-  unit-tests:
+  build:
     name: build
-    runs-on: self-hosted
+    runs-on: cloud-hosted
     steps:
       - name: Checkout branch
         uses: actions/checkout@v3
@@ -23,5 +26,5 @@ jobs:
         with:
           maven-version: 3.6.3
           
-      - name: Build
+      - name: Compile
         run: mvn clean install 
