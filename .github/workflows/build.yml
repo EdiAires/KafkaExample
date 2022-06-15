@@ -38,6 +38,6 @@ jobs:
       - name: Check Artefact
         run: ls /home/runner/.m2/repository/org/kafkaex/KafkaExample/1.0-SNAPSHOT/
     
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3 
+      #- name: Setup tmate session
+       # uses: mxschmitt/action-tmate@v3 
       
