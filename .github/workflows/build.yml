@@ -34,3 +34,6 @@ jobs:
       
       - name: Tests
         run: mvn test
+      
+      - name: Check Artefact
+        run: ls /home/runner/.m2/repository/org/kafkaex/KafkaExample/1.0-SNAPSHOT/
