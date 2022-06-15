@@ -1,0 +1,27 @@
+name: CI - Full steps
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+      
+jobs:
+  unit-tests:
+    name: build
+    runs-on: self-hosted
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 8
+        uses: Flutter-Tech/ppb-java@v1.0.0
+        with:
+          java-version: '8'
+
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v4.2
+        with:
+          maven-version: 3.6.3
+          
+      - name: Build
+        run: mvn clean install 
