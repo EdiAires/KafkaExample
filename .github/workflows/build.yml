@@ -30,4 +30,7 @@ jobs:
           maven-version: 3.6.3
           
       - name: Compile
-        run: mvn clean install 
+        run: mvn clean install
+      
+      - name: Tests
+        run: mvn test
