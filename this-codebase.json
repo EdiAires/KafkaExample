@@ -6,7 +6,8 @@
     "flow": "multiple-teams",
     "default-branch": "main",
     "teams": [
-      "ppb"
+      "ppb",
+      "outsiders"
     ],
     "flow-config": {
       "default": {
